@@ -2,113 +2,76 @@ package org.example.controller;
 
 import org.example.model.Category;
 import org.example.service.CategoryService;
-import org.example.service.impl.CategoryServiceImpl;
-import org.example.utils.SessionManager;
 
-import java.util.Optional;
 import java.util.Scanner;
 
-public class CategoryController {
-    private final CategoryService categoryService = new CategoryServiceImpl();
-    private final Scanner scanner = new Scanner(System.in);
+public final class CategoryController {
+    private final CategoryService categories;
+    private final Scanner scanner;
+
+    public CategoryController(CategoryService categories, Scanner scanner) {
+        this.categories = categories;
+        this.scanner = scanner;
+    }
+
+    public void showCategories() {
+        System.out.println("\n--- CATEGORIES ---");
+        for (Category category : categories.getAllCategories())
+            System.out.printf("%d | %s | %s%n", category.getCategoryId(), category.getCategoryName(),
+                    category.getDescription() == null ? "" : category.getDescription());
+    }
 
     public void handleCategoryMenu() {
-        // ពិនិត្យសិទ្ធិ Admin
-        if (SessionManager.getLoggInUser() == null || !SessionManager.getLoggInUser().getRole().equalsIgnoreCase("ADMIN")) {
-            System.out.println("Access denied. Admin only.");
-            return;
-        }
-
-        boolean back = false;
-        while (!back) {
-            System.out.println("\n=== CATEGORY MANAGEMENT (ADMIN) ===");
-            System.out.println("1. View All Categories");
-            System.out.println("2. Add New Category");
-            System.out.println("3. Update Category");
-            System.out.println("4. Delete Category");
-            System.out.println("5. Back to Dashboard");
-            System.out.print("Choose option: ");
-            String choice = scanner.nextLine();
-
-            switch (choice) {
-                case "1" -> listCategories();
-                case "2" -> addCategory();
-                case "3" -> updateCategory();
-                case "4" -> deleteCategory();
-                case "5" -> back = true;
-                default -> System.out.println("Invalid option. Try again.");
+        while (true) {
+            System.out.println("\n=== CATEGORY MANAGEMENT ===\n1. List\n2. Add\n3. Edit\n4. Delete\n0. Back");
+            System.out.print("Choice: ");
+            try {
+                switch (scanner.nextLine().trim()) {
+                    case "1" -> showCategories();
+                    case "2" -> add();
+                    case "3" -> edit();
+                    case "4" -> delete();
+                    case "0" -> { return; }
+                    default -> System.out.println("Choose 1-4 or 0.");
+                }
+            } catch (RuntimeException e) {
+                System.out.println("Unable to complete category action: " + e.getMessage());
             }
         }
     }
 
-    private void listCategories() {
-        System.out.println("\n--- CATEGORY LIST ---");
-        for (Category cat : categoryService.getAllCategories()) {
-            System.out.println("ID: " + cat.getCategoryId() + " | Name: " + cat.getCategoryName() + " | Desc: " + cat.getDescription());
-        }
+    private void add() {
+        System.out.print("Name: ");
+        String name = scanner.nextLine();
+        System.out.print("Description: ");
+        String description = scanner.nextLine();
+        categories.createCategory(name, description);
+        System.out.println("Category created.");
     }
 
-    private void addCategory() {
-        try {
-            System.out.print("Category Name: ");
-            String name = scanner.nextLine();
-            System.out.print("Description: ");
-            String desc = scanner.nextLine();
-
-            if (categoryService.createCategory(name, desc)) {
-                System.out.println("Category created successfully!");
-            } else {
-                System.out.println("Failed to create category.");
-            }
-        } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
-        }
+    private void edit() {
+        showCategories();
+        int id = readId();
+        Category current = categories.getCategoryById(id).orElseThrow(() -> new IllegalArgumentException("Category not found."));
+        System.out.print("Name [" + current.getCategoryName() + "]: ");
+        String name = scanner.nextLine();
+        System.out.print("Description [" + current.getDescription() + "]: ");
+        String description = scanner.nextLine();
+        categories.updateCategory(id, name.isBlank() ? current.getCategoryName() : name,
+                description.isBlank() ? current.getDescription() : description);
+        System.out.println("Category updated.");
     }
 
-    private void updateCategory() {
-        try {
-            listCategories();
-            System.out.print("Enter Category ID to update: ");
-            int id = Integer.parseInt(scanner.nextLine());
-
-            Optional<Category> existing = categoryService.getCategoryById(id);
-            if (existing.isEmpty()) {
-                System.out.println("Category ID not found.");
-                return;
-            }
-
-            System.out.print("New Category Name (" + existing.get().getCategoryName() + "): ");
-            String name = scanner.nextLine();
-            System.out.print("New Description (" + existing.get().getDescription() + "): ");
-            String desc = scanner.nextLine();
-
-            if (categoryService.updateCategory(id, name, desc)) {
-                System.out.println("Category updated successfully!");
-            } else {
-                System.out.println("Update failed.");
-            }
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid number format.");
-        } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
-        }
+    private void delete() {
+        showCategories();
+        categories.deleteCategory(readId());
+        System.out.println("Category deleted.");
     }
 
-    private void deleteCategory() {
-        try {
-            listCategories();
-            System.out.print("Enter Category ID to delete: ");
-            int id = Integer.parseInt(scanner.nextLine());
-
-            if (categoryService.deleteCategory(id)) {
-                System.out.println("Category deleted successfully!");
-            } else {
-                System.out.println("Delete failed.");
-            }
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid number format.");
-        } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
-        }
+    private int readId() {
+        System.out.print("Category ID: ");
+        int id = Integer.parseInt(scanner.nextLine().trim());
+        if (id <= 0) throw new IllegalArgumentException("ID must be positive.");
+        return id;
     }
 }

@@ -14,6 +14,6 @@ public class Order {
     private int orderId;
     private int customerId;
     private double totalAmount;
-    private String orderStatus; // PENDING, SHIPPED, DELIVERED, CANCELLED[cite: 3]
+    private String orderStatus;
     private Timestamp orderDate;
 }

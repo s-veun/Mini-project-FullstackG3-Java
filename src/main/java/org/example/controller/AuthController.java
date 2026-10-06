@@ -7,53 +7,58 @@ import org.example.utils.SessionManager;
 import java.util.Optional;
 import java.util.Scanner;
 
-public class AuthController {
-    private final UserService userService = new UserService();
-    private final Scanner scanner = new Scanner(System.in);
+public final class AuthController {
+    private final UserService users;
+    private final SessionManager session;
+    private final Scanner scanner;
+
+    public AuthController(UserService users, SessionManager session, Scanner scanner) {
+        this.users = users;
+        this.session = session;
+        this.scanner = scanner;
+    }
 
     public void handleAuthMenu() {
-        while (!SessionManager.isLoggedIn()) {
-            System.out.println("\n=== AUTHENTICATION MENU ===");
-            System.out.println("1. Register\n2. Login\n3. Back");
-            System.out.print("Choose: ");
-            String choice = scanner.nextLine();
-
-            switch (choice) {
+        while (!session.isLoggedIn()) {
+            System.out.println("\n=== AUTHENTICATION ===\n1. Register\n2. Login\n0. Back");
+            System.out.print("Choice: ");
+            switch (scanner.nextLine().trim()) {
                 case "1" -> register();
                 case "2" -> login();
-                case "3" -> { return; }
-                default -> System.out.println("Invalid option.");
+                case "0" -> { return; }
+                default -> System.out.println("Choose 1, 2 or 0.");
             }
         }
     }
 
     private void register() {
+        System.out.print("Username: ");
+        String username = scanner.nextLine();
+        System.out.print("Email: ");
+        String email = scanner.nextLine();
+        System.out.print("Password (at least 5 characters): ");
+        String password = scanner.nextLine();
+        System.out.print("Account type (CUSTOMER/SELLER): ");
+        String role = scanner.nextLine();
         try {
-            System.out.print("Username: "); String u = scanner.nextLine();
-            System.out.print("Password: "); String p = scanner.nextLine();
-            System.out.print("Email: "); String e = scanner.nextLine();
-            System.out.print("Role (ADMIN/SELLER/CUSTOMER): "); String r = scanner.nextLine();
-
-            if (userService.register(u, p, e, r)) {
-                System.out.println("Registration successful!");
-            } else {
-                System.out.println("Registration failed.");
-            }
-        } catch (Exception ex) {
-            System.out.println("Error: " + ex.getMessage());
+            User user = users.register(username, password, email, role);
+            System.out.println("Registered " + user.getUsername() + " as " + user.getRole() + ". Please log in.");
+        } catch (IllegalArgumentException | org.example.exception.AppException e) {
+            System.out.println("Registration failed: " + e.getMessage());
         }
     }
 
     private void login() {
-        System.out.print("Username: "); String u = scanner.nextLine();
-        System.out.print("Password: "); String p = scanner.nextLine();
-
-        Optional<User> user = userService.login(u, p);
-        if (user.isPresent()) {
-            SessionManager.login(user.get());
-            System.out.println("Welcome back, " + user.get().getUsername() + " (" + user.get().getRole() + ")");
-        } else {
-            System.out.println("Invalid credentials.");
+        System.out.print("Username: ");
+        String username = scanner.nextLine();
+        System.out.print("Password: ");
+        String password = scanner.nextLine();
+        Optional<User> user = users.login(username, password);
+        if (user.isEmpty()) {
+            System.out.println("Invalid username or password.");
+            return;
         }
+        session.login(user.get());
+        System.out.println("Welcome, " + user.get().getUsername() + " (" + user.get().getRole() + ").");
     }
 }

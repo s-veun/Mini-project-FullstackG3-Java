@@ -1,30 +1,22 @@
 package org.example.service;
 
-import org.example.dao.ProductDao;
 import org.example.model.Product;
-import org.example.utils.InputValidator;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
-public class ProductService {
-    private final ProductDao productDao = new ProductDao();
+public interface ProductService {
+    List<Product> getCatalog();
+    List<Product> searchCatalog(String term, Integer categoryId, BigDecimal minPrice, BigDecimal maxPrice);
+    List<Product> getMyProducts();
+    Optional<Product> find(int productId);
+    boolean addProduct(int categoryId, String name, String description, double price, int stock);
+    boolean addProductForSeller(int sellerId, int categoryId, String name, String description, double price, int stock);
+    boolean updateProduct(int productId, int categoryId, String name, String description, double price, int stock);
+    boolean setProductActive(int productId, boolean active);
+    int importProducts(Integer sellerId, List<ProductImport> products);
 
-    public boolean addProduct(int sellerId, int categoryId, String name, String desc, double price, int stock) {
-        if (!org.example.utils.InputValidator.isValidString(name) || !org.example.utils.InputValidator.isValidPrice(price) || stock < 0) {
-            throw new IllegalArgumentException("Invalid product details.");
-        }
-        Product product = Product.builder()
-                .sellerId(sellerId)
-                .categoryId(categoryId)
-                .productName(name)
-                .description(desc)
-                .price(price)
-                .stockQuantity(stock)
-                .build();
-        return productDao.save(product);
-    }
-
-    public List<Product> getAllProducts() {
-        return productDao.findAll();
+    record ProductImport(int categoryId, String name, String description, BigDecimal price, int stock) {
     }
 }

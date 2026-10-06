@@ -18,5 +18,6 @@ public class Product {
     private String description;
     private double price;
     private int stockQuantity;
+    private boolean active;
     private Timestamp createdAt;
 }

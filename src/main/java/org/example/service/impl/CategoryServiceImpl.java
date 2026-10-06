@@ -1,59 +1,57 @@
 package org.example.service.impl;
 
 import org.example.dao.CategoryDao;
+import org.example.enums.Role;
 import org.example.model.Category;
 import org.example.service.CategoryService;
-import org.example.utils.InputValidator;
+import org.example.utils.SessionManager;
 
 import java.util.List;
 import java.util.Optional;
 
-public class CategoryServiceImpl implements CategoryService {
-    private final CategoryDao categoryDao = new CategoryDao();
+public final class CategoryServiceImpl implements CategoryService {
+    private final CategoryDao categories;
+    private final SessionManager session;
+
+    public CategoryServiceImpl(CategoryDao categories, SessionManager session) {
+        this.categories = categories;
+        this.session = session;
+    }
 
     @Override
     public boolean createCategory(String name, String description) {
-        if (!InputValidator.isValidString(name)) {
-            throw new IllegalArgumentException("Category name cannot be empty.");
-        }
-        Category category = Category.builder()
-                .categoryName(name)
-                .description(description)
-                .build();
-        return categoryDao.save(category);
+        session.require(Role.ADMIN);
+        validateName(name);
+        return categories.save(Category.builder().categoryName(name.trim()).description(description).build());
     }
 
     @Override
     public List<Category> getAllCategories() {
-        return categoryDao.findAll();
+        return categories.findAll();
     }
 
     @Override
     public Optional<Category> getCategoryById(int id) {
-        return categoryDao.findById(id);
+        return categories.findById(id);
     }
 
     @Override
     public boolean updateCategory(int id, String name, String description) {
-        if (!categoryDao.existsById(id)) {
-            throw new IllegalArgumentException("Category with ID " + id + " does not exist.");
-        }
-        if (!InputValidator.isValidString(name)) {
-            throw new IllegalArgumentException("Category name cannot be empty.");
-        }
-        Category category = Category.builder()
-                .categoryId(id)
-                .categoryName(name)
-                .description(description)
-                .build();
-        return categoryDao.update(category);
+        session.require(Role.ADMIN);
+        validateName(name);
+        if (categories.findById(id).isEmpty()) throw new IllegalArgumentException("Category does not exist.");
+        return categories.update(Category.builder().categoryId(id).categoryName(name.trim()).description(description).build());
     }
 
     @Override
     public boolean deleteCategory(int id) {
-        if (!categoryDao.existsById(id)) {
-            throw new IllegalArgumentException("Category with ID " + id + " does not exist.");
-        }
-        return categoryDao.delete(id);
+        session.require(Role.ADMIN);
+        if (categories.findById(id).isEmpty()) throw new IllegalArgumentException("Category does not exist.");
+        return categories.delete(id);
+    }
+
+    private void validateName(String name) {
+        if (name == null || name.isBlank() || name.length() > 100)
+            throw new IllegalArgumentException("Category name must contain 1-100 characters.");
     }
 }

@@ -1,16 +1,17 @@
 package org.example.service;
 
-import org.example.dao.OrderDao;
-import org.example.model.CartItem;
+import org.example.enums.OrderStatus;
+import org.example.model.Order;
+import org.example.model.OrderDetail;
+
 import java.util.List;
 
-public class OrderService {
-    private final OrderDao orderDao = new OrderDao();
-
-    public boolean checkout(int customerId, double totalAmount, List<CartItem> cartItems) {
-        if (cartItems == null || cartItems.isEmpty()) {
-            throw new IllegalStateException("Cart is empty.");
-        }
-        return orderDao.createOrderWithTransaction(customerId, totalAmount, cartItems);
-    }
+public interface OrderService {
+   int checkout();
+   List<Order> history();
+   Order find(int id);
+   List<OrderDetail> details(int orderId);
+   void pay(int orderId, boolean successful);
+   void cancel(int orderId);
+   void advance(int orderId, OrderStatus next);
 }
