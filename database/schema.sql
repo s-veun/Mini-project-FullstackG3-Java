@@ -92,3 +92,6 @@ CREATE INDEX IF NOT EXISTS order_details_order_idx ON order_details(order_id);
 CREATE INDEX IF NOT EXISTS order_details_seller_order_idx ON order_details(seller_id, order_id);
 CREATE INDEX IF NOT EXISTS payments_order_date_idx ON payments(order_id, payment_date DESC);
 CREATE INDEX IF NOT EXISTS reviews_product_date_idx ON reviews(product_id, created_at DESC);
+
+INSERT INTO users (username, email, password, role)
+VALUES ('admin', 'admin123@gmail.com', 'admin123', 'ADMIN');
